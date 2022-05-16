@@ -8,13 +8,17 @@ import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import './fetch_room_info_error.dart';
 import './danmaku_protocol.dart';
+import './utils/print_log.dart';
 
 class DanmakuReceiver {
-  List<Function> danmakuMsg = [];
-  List<Function> gift = [];
-  List<Function> giftCombo = [];
-  List<Function> spuerChat = [];
-  List<Function> guard = [];
+  final List<Function> _danmakuMsg = [];
+  final List<Function> _gift = [];
+  final List<Function> _giftCombo = [];
+  final List<Function> _spuerChat = [];
+  final List<Function> _guard = [];
+  final List<Function> _liveStart = [];
+  final List<Function> _liveEnd = [];
+  final List<Function> _broadcast = [];
 
   WebSocketChannel? ws;
   int roomId = 0;
@@ -62,7 +66,7 @@ class DanmakuReceiver {
           final payload = data.getRange(16, totalLength);
           switch (type) {
             case DanmakuType.authReply:
-              print('认证成功，已连接到弹幕服务器');
+              printLog('认证成功，已连接到弹幕服务器');
               Timer.periodic(Duration(seconds: 30), (timer) {
                 ws?.sink.add(packetEncode(1, 2, '陈睿你妈死了'));
               });
@@ -79,15 +83,60 @@ class DanmakuReceiver {
                   var offset = 0;
                   while (offset < data.length) {
                     final length = dataBytes.getUint32(0);
-                    final dataJSON = jsonDecode(utf8.decode(
-                        data.getRange(offset + 16, offset + length).toList()));
+                    final dataJSONString = utf8.decode(
+                        data.getRange(offset + 16, offset + length).toList());
+                    for (final handler in _broadcast) {
+                      handler(dataJSONString);
+                    }
+                    final dataJSON = jsonDecode(dataJSONString);
                     if (dataJSON['cmd'] == 'SEND_GIFT') {
-                      for (final handler in gift) {
-                        Future.microtask(() {
-                          handler(
-                              giftName: dataJSON['data']['giftName'],
-                              uname: dataJSON['data']['uname']);
-                        });
+                      for (final handler in _gift) {
+                        Future.microtask(() => handler(
+                            giftName: dataJSON['data']['giftName'],
+                            uname: dataJSON['data']['uname']));
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'COMBO_SEND') {
+                      for (final handler in _giftCombo) {
+                        Future.microtask(() => handler(
+                            giftName: dataJSON['data']['gift_name'],
+                            uname: dataJSON['data']['uname'],
+                            count: dataJSON['data']['combo_num'],
+                            price: dataJSON['data']['price'] /
+                                1000 *
+                                dataJSON['data']['super_gift_num']));
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'GUARD_BUY') {
+                      for (final handler in _guard) {
+                        Future.microtask(() => handler(
+                            uname: dataJSON['data']['username'],
+                            giftName: dataJSON['data']['gift_name']));
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'LIVE') {
+                      for (final handler in _liveStart) {
+                        Future.microtask(() => handler());
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'PREPARING') {
+                      for (final handler in _liveEnd) {
+                        Future.microtask(() => handler());
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'SUPER_CHAT_MESSAGE') {
+                      for (final handler in _liveEnd) {
+                        Future.microtask(() => handler(
+                            uname: dataJSON['data']['user_info']['uname'],
+                            price: dataJSON['data']['price']));
+                      }
+                    }
+                    if (dataJSON['cmd'] == 'DANMU_MSG') {
+                      for (final handler in _danmakuMsg) {
+                        Future.microtask(() => handler(
+                            uname: dataJSON['data'][2][1],
+                            uid: dataJSON['data'][2][0],
+                            text: dataJSON['data'][1]));
                       }
                     }
                     offset += length;
@@ -114,7 +163,43 @@ class DanmakuReceiver {
     return packet.toBytes();
   }
 
+  //投喂礼物回调
   void onGift(Function handler) {
-    gift.add(handler);
+    _gift.add(handler);
+  }
+
+  //礼物统计回调
+  void onGiftCombo(Function handler) {
+    _giftCombo.add(handler);
+  }
+
+  //开通大航海回调
+  void onGuard(Function handler) {
+    _guard.add(handler);
+  }
+
+  //直播开始回调
+  void onLiveStart(Function handler) {
+    _liveStart.add(handler);
+  }
+
+  //直播结束回调
+  void onLiveEnd(Function handler) {
+    _liveEnd.add(handler);
+  }
+
+  //醒目留言回调
+  void onSuperChat(Function handler) {
+    _spuerChat.add(handler);
+  }
+
+  //弹幕信息回调
+  void onDanmaku(Function handler) {
+    _danmakuMsg.add(handler);
+  }
+
+  //监听全部事件
+  void onBroadcast(Function handler) {
+    _broadcast.add(handler);
   }
 }

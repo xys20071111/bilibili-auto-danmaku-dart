@@ -21,12 +21,19 @@ class DanmakuTemplate {
       this.guard, this.sc, this.advertisement);
 }
 
+class APIServerConfig {
+  int port;
+  String token;
+  APIServerConfig(this.port, this.token);
+}
+
 class Config {
-  int roomId = 0;
-  Credential verify = Credential('csrf', 'sessdata', 'buvid3', 0);
-  DanmakuTemplate danmakus = DanmakuTemplate('', '', '', '', '', '', '');
-  int coldDownTime = 0;
-  int advertiseingColdDown = 0;
+  late int roomId;
+  late Credential verify;
+  late DanmakuTemplate danmakus;
+  late int coldDownTime;
+  late int advertiseingColdDown;
+  late APIServerConfig apiConfig;
   Config(String configPath) {
     final configFile = File(configPath);
     final configJSON = jsonDecode(configFile.readAsStringSync());
@@ -46,5 +53,7 @@ class Config {
         configJSON['danmakus']['advertisment']);
     coldDownTime = configJSON['cold_down_time'];
     advertiseingColdDown = configJSON['advertising_cold_down'];
+    apiConfig =
+        APIServerConfig(configJSON['api']['port'], configJSON['api']['token']);
   }
 }
