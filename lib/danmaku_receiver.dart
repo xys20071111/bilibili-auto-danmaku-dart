@@ -22,7 +22,7 @@ class DanmakuReceiver {
 
   WebSocketChannel? ws;
   int roomId = 0;
-  DanmakuReceiver(Config config) {
+  DanmakuReceiver(Config config, Logger logger) {
     final headers = <String, String>{
       'Cookie':
           'buvid3=${config.verify.buvid3}; SESSDATA=${config.verify.sessdata}; bili_jct=${config.verify.csrf};',
@@ -66,7 +66,7 @@ class DanmakuReceiver {
           final payload = data.getRange(16, totalLength);
           switch (type) {
             case DanmakuType.authReply:
-              printLog('认证成功，已连接到弹幕服务器');
+              logger.log('认证通过，已连接到弹幕服务器');
               Timer.periodic(Duration(seconds: 30), (timer) {
                 ws?.sink.add(packetEncode(1, 2, '陈睿你妈死了'));
               });
@@ -198,7 +198,7 @@ class DanmakuReceiver {
     _danmakuMsg.add(handler);
   }
 
-  //监听全部事件
+  //监听全部弹幕事件
   void onBroadcast(Function handler) {
     _broadcast.add(handler);
   }

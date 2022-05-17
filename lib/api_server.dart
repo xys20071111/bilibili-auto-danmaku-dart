@@ -8,9 +8,9 @@ class WebSocketAPIServer {
   Function? auth;
   Function? getRoomId;
   Function? sendDanmaku;
-  WebSocketAPIServer(String host, int port) {
+  WebSocketAPIServer(String host, int port, Logger logger) {
     HttpServer.bind(host, port).then((server) {
-      printLog('WebSocket 服务器运行在 ws://$host:$port');
+      logger.log('WebSocket 服务器运行在 ws://$host:$port');
       server.listen((req) {
         WebSocketTransformer.upgrade(req).then((ws) {
           _clientList.add(ws);
