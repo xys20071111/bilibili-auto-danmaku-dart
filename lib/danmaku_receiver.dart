@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:bilibili_live_bot_dart/config.dart';
 import 'package:brotli/brotli.dart';
-import 'package:buffer/buffer.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import './fetch_room_info_error.dart';
@@ -152,14 +151,15 @@ class DanmakuReceiver {
   Uint8List packetEncode(int protocol, int type, String payload) {
     final utf8Payload = utf8.encode(payload);
     final totalLength = 16 + utf8Payload.length;
-    final packet =
-        ByteDataWriter(bufferLength: totalLength, endian: Endian.big);
-    packet.writeInt32(totalLength);
-    packet.writeInt16(16);
-    packet.writeUint16(protocol);
-    packet.writeUint32(type);
-    packet.writeUint32(1);
-    packet.write(utf8Payload);
+    final packetHeader = ByteData(16);
+    packetHeader.setInt32(0, totalLength);
+    packetHeader.setInt16(4, 16);
+    packetHeader.setUint16(6, protocol);
+    packetHeader.setUint32(8, type);
+    packetHeader.setUint32(12, 1);
+    final packet = BytesBuilder();
+    packet.add(packetHeader.buffer.asInt8List());
+    packet.add(utf8Payload);
     return packet.toBytes();
   }
 
