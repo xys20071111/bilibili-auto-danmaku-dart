@@ -88,14 +88,19 @@ class DanmakuReceiver {
                       handler(dataJSONString);
                     }
                     final dataJSON = jsonDecode(dataJSONString);
-                    if (dataJSON['cmd'] == 'SEND_GIFT') {
+                    final cmd = dataJSON['cmd'].toString().split(':')[0];
+                    if (dataJSON['info'] != null) {
+                      dataJSON['data'] = dataJSON['info'];
+                    }
+                    print(cmd);
+                    if (cmd == 'SEND_GIFT') {
                       for (final handler in _gift) {
                         Future.microtask(() => handler(
                             giftName: dataJSON['data']['giftName'],
                             uname: dataJSON['data']['uname']));
                       }
                     }
-                    if (dataJSON['cmd'] == 'COMBO_SEND') {
+                    if (cmd == 'COMBO_SEND') {
                       for (final handler in _giftCombo) {
                         Future.microtask(() => handler(
                             giftName: dataJSON['data']['gift_name'],
@@ -106,31 +111,31 @@ class DanmakuReceiver {
                                 dataJSON['data']['super_gift_num']));
                       }
                     }
-                    if (dataJSON['cmd'] == 'GUARD_BUY') {
+                    if (cmd == 'GUARD_BUY') {
                       for (final handler in _guard) {
                         Future.microtask(() => handler(
                             uname: dataJSON['data']['username'],
                             giftName: dataJSON['data']['gift_name']));
                       }
                     }
-                    if (dataJSON['cmd'] == 'LIVE') {
+                    if (cmd == 'LIVE') {
                       for (final handler in _liveStart) {
                         Future.microtask(() => handler());
                       }
                     }
-                    if (dataJSON['cmd'] == 'PREPARING') {
+                    if (cmd == 'PREPARING') {
                       for (final handler in _liveEnd) {
                         Future.microtask(() => handler());
                       }
                     }
-                    if (dataJSON['cmd'] == 'SUPER_CHAT_MESSAGE') {
+                    if (cmd == 'SUPER_CHAT_MESSAGE') {
                       for (final handler in _liveEnd) {
                         Future.microtask(() => handler(
                             uname: dataJSON['data']['user_info']['uname'],
                             price: dataJSON['data']['price']));
                       }
                     }
-                    if (dataJSON['cmd'] == 'DANMU_MSG') {
+                    if (cmd == 'DANMU_MSG') {
                       for (final handler in _danmakuMsg) {
                         Future.microtask(() => handler(
                             uname: dataJSON['data'][2][1],
