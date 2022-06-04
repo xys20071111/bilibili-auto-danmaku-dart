@@ -92,7 +92,6 @@ class DanmakuReceiver {
                     if (dataJSON['info'] != null) {
                       dataJSON['data'] = dataJSON['info'];
                     }
-                    print(cmd);
                     if (cmd == 'SEND_GIFT') {
                       for (final handler in _gift) {
                         Future.microtask(() => handler(
